@@ -1,2 +1,5 @@
+proyecto/__pycache__/
+asistencia/__pycache__/
+*.py[cod]
+*$py.class
 .env
-db.sqlite3
