@@ -230,9 +230,8 @@ class VacacionesEmpleado(models.Model):
     fecha_final = models.DateTimeField()
     cedula = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name="fk_vacacion_empleado")
     estado = models.CharField(        
-        unique=False, 
+        unique=False,
         null=False,
         blank=False,
         max_length=1
         )
-    
