@@ -1,250 +1,238 @@
+from turtle import mode
 from django.db import models
-from django.contrib.auth.models import AbstractUser
-from django.conf import settings
+from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin, BaseUserManager,)
 from django.utils import timezone
+from django.conf import settings
 
 # Create your models here.
-class Usuario(AbstractUser):
+class empleado(models.Model):
+    cedula = models.CharField(
+        primary_key=True,
+        unique=True, 
+        null=False,
+        blank=False,
+        max_length=15
+    )
     nombres =  models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=30
+        max_length=45
     )
     apellidos = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=30
+        max_length=45
     )
-    cedula = models.CharField(
+    direccion = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=10
-    )
-    domicilio = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=30
+        max_length=45
     )
     telefono = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=10
+        max_length=45
     )
-    fecha_nacimiento = models.DateField(default=timezone.now())
+    fecha_nacimiento = models.DateField()
+    estado = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=1
+        )
+    email =  models.EmailField()
+    def __str__(self):
+        # String to give nick attr to admin site
+        return self.nombres
+    
+class CustomAccountManager(BaseUserManager):
+    def create_user(self, nombre_usuario,cedula, password, **other_fields):
+        usuario = self.model(nombre_usuario=nombre_usuario,cedula=cedula, **other_fields)
+        usuario.set_password(password)
+        usuario.save()
+        return usuario
+    def create_superuser(self, nombre_usuario,cedula, password, **other_fields):
+        
+        other_fields.setdefault('is_staff', True)
+        other_fields.setdefault('is_superuser', True)
+        other_fields.setdefault('is_active', True)
+        return self.create_user(nombre_usuario,empleado.objects.get(cedula=cedula),password, **other_fields)
+class cuenta_usuario(AbstractBaseUser,PermissionsMixin):
+    nombre_usuario = models.CharField(
+        unique=True, 
+        null=False,
+        blank=False,
+        
+        max_length=45
+    )
+    cedula = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name='fk_cedula')
+    password = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=255
+    )
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    
+    objects = CustomAccountManager()
 
+    USERNAME_FIELD='nombre_usuario'
+    REQUIRED_FIELDS=['cedula']
+    def __str__(self):
+    # String to give nick attr to admin site
+        return self.nombre_usuario
+    
 class Dependencia(models.Model):
-    descripcion =  models.CharField(
+    nombre_dependencia = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=45
-    )
-    estado = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=1
-    )
-
-class Jornada(models.Model):
-    observacion = models.CharField(
-        unique=False, 
-        null=False,
-        blank=True,
-        max_length=45
-    )
-    hora_inicio = models.TimeField()
-    hora_final = models.TimeField()
-    dia_semana = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=10
-    )
-    estado = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=1
-    )
-
-class Horario(models.Model):
-    observacion = models.CharField(
-        unique=False, 
-        null=False,
-        blank=True,
         max_length=45)
-    estado = models.CharField(
+    estado = models.CharField(        
         unique=False, 
         null=False,
         blank=False,
         max_length=1
-    )
-    idJornadas = models.ForeignKey(Jornada, on_delete=models.CASCADE, related_name="fk_jornada_Horario")
+        )
 
 class Cargo(models.Model):
     nombre_cargo = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=35
-    )
-    descripcion = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=45
-    )
-    estado = models.CharField(
+        max_length=45)
+    dependencia =  models.ForeignKey(Dependencia, on_delete=models.CASCADE, related_name='fk_dependencia')
+    estado = models.CharField(        
         unique=False, 
         null=False,
         blank=False,
         max_length=1
-    )
-    idDependencia = models.ForeignKey(Dependencia, on_delete=models.CASCADE, related_name="fk_Dependencia_Cargo")
-    idHorario =  models.ForeignKey(Horario, on_delete=models.CASCADE, related_name="fk_Horario_Cargo")
-
-class EmpleadoConCargo(models.Model):
-    id_cargo = models.ForeignKey(Cargo, on_delete=models.CASCADE, related_name="fk_Cargo_EmpleadoConCargo")
-    id_usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="fk_Usuario_EmpleadoConCargo")
-
-class PermisosEmpleado(models.Model):
-    fecha_inicio = models.DateField()
-    fecha_final = models.DateField()
-    motivo = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=45
-    )
-    idEmpleado = models.ForeignKey(EmpleadoConCargo, on_delete=models.CASCADE, related_name="fk_Empleado_PermisosEmpleado")
-    estado = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=1
-    )
-
-class VacacionesEmpleado(models.Model):
-    fecha_inicio = models.DateField()
-    fecha_final = models.DateField()
-    idEmpleado = models.ForeignKey(EmpleadoConCargo, on_delete=models.CASCADE, related_name="fk_Empleado_VacacionesEmpleado")
-    estado =  models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=1
-    )
-
-class Docente(models.Model):
-    idEmpleado = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="fk_Empleado_Docente")
-    estado =  models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=1
-    )
-
+        )
+    
 class Materia(models.Model):
-    nombre_materia =  models.CharField(
+    codigo_materia = models.CharField(
+        primary_key=True,   
         unique=False, 
         null=False,
         blank=False,
-        max_length=30
-    )
-    estado =  models.CharField(
+        max_length=45)
+    nombre_materia = models.CharField(
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=45)
+    estado = models.CharField(        
         unique=False, 
         null=False,
         blank=False,
         max_length=1
-    )
+        )
 
 class Curso(models.Model):
     semestre = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=6
-    )
-    hora_inicio =  models.TimeField()
-    hora_final = models.TimeField()
-    dia_semana = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
         max_length=10)
-    salon = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=4
-        )
     sede = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=10
+        max_length=10)
+    codigo_materia = models.ForeignKey(Materia, on_delete=models.CASCADE, related_name='fk_materia')
+    cedula_docente = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name='fk_docente')
+    fecha_inicio = models.DateField()
+    fecha_final = models.DateField()
+    salon = models.CharField(
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=10)
+    estado = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=1
         )
-    cupos = models.IntegerField()
-    creditos = models.IntegerField()
-    idDocente = models.ForeignKey(Docente, on_delete=models.CASCADE, related_name="fk_Docente_Curso")
-    idMateria = models.ForeignKey(Materia, on_delete=models.CASCADE, related_name="fk_Materia_Curso")
-
-class PermisosDocente(models.Model):
-    fecha_inicio = models.DateField()
-    fecha_final = models.DateField()
-    motivo = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=45
-    )
-    idDocente = models.ForeignKey(Docente, on_delete=models.CASCADE, related_name="fk_Docente_PermisosDocente")
-    estado =  models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=1
-    )
-
-class VacacionesDocente(models.Model):
-    fecha_inicio = models.DateField()
-    fecha_final = models.DateField()
-    idDocente = models.ForeignKey(Docente, on_delete=models.CASCADE, related_name="fk_Docente_VacacionesDocente")
-    estado =  models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=1
-    )
-
-class AsistenciaDocente(models.Model):
-    asistencia = models.BooleanField()
-    idCurso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="fk_Curso_AsistenciaDocente")
-    tema = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=20
-    )
-    dificultades = models.CharField(
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=45
-    )
-
-class AsitenciaEmpleado(models.Model):
-    asistencia = models.BooleanField()
-    idEmpleado = models.ForeignKey(EmpleadoConCargo, on_delete=models.CASCADE, related_name="fk_Empleado_AsistenciaEmpleado")
+    
+class Horario(models.Model):
+    hora_inicio = models.TimeField()
+    hora_final = models.TimeField()
+    fecha = models.DateField()
     observacion = models.CharField(
         unique=False, 
         null=False,
         blank=False,
-        max_length=45
-    )
+        max_length=45)
+    estado = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=1
+        )
+
+class Detalle_Cargo_Empleado(models.Model):
+    cedula_empleado = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name="fk_detalle_empleado_cargo")
+    cargo = models.ForeignKey(Cargo, on_delete=models.CASCADE, related_name="fk_detalle_cargo")
+    estado = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=1
+        )
+    
+class Detalle_Horario_Empleado(models.Model):
+    cedula_empleado = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name="fk_horario_empleado_cedula")
+    horario = models.ForeignKey(Horario, on_delete=models.CASCADE, related_name="fk_horario_empleado")
+    estado = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=1
+        )
+class Asistencia_Empleado(models.Model):
+    cedula = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name="fk_asistencia_cedula")
+    fecha_hora_asitencia = models.DateTimeField()
+    observacion = models.CharField(
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=45)
+class Asistencia_Docente(models.Model):
+    cedula = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name="fk_asistencia_cedula_docente")
+    fecha_hora_asitencia = models.DateTimeField()
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="fk_asistencia_docente_curso")
+    observacion = models.CharField(
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=45)
+    
+class PermisoEmpleado(models.Model):
+    fecha_inicio = models.DateTimeField()
+    fecha_final = models.DateTimeField()
+    cedula = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name="fk_permiso_empleado")
+    descripcion = models.TextField(blank=False, max_length=300)
+    estado = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=1
+        )
+    
+class VacacionesEmpleado(models.Model):
+    fecha_inicio = models.DateTimeField()
+    fecha_final = models.DateTimeField()
+    cedula = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name="fk_vacacion_empleado")
+    estado = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=1
+        )
+    
