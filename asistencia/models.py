@@ -61,31 +61,6 @@ class CustomAccountManager(BaseUserManager):
         other_fields.setdefault('is_superuser', True)
         other_fields.setdefault('is_active', True)
         return self.create_user(nombre_usuario,empleado.objects.get(cedula=cedula),password, **other_fields)
-class cuenta_usuario(AbstractBaseUser,PermissionsMixin):
-    nombre_usuario = models.CharField(
-        unique=True, 
-        null=False,
-        blank=False,
-        
-        max_length=45
-    )
-    cedula = models.ForeignKey(empleado, on_delete=models.CASCADE, related_name='fk_cedula')
-    password = models.CharField(        
-        unique=False, 
-        null=False,
-        blank=False,
-        max_length=255
-    )
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    
-    objects = CustomAccountManager()
-
-    USERNAME_FIELD='nombre_usuario'
-    REQUIRED_FIELDS=['cedula']
-    def __str__(self):
-    # String to give nick attr to admin site
-        return self.nombre_usuario
     
 class Dependencia(models.Model):
     nombre_dependencia = models.CharField(
@@ -235,3 +210,30 @@ class VacacionesEmpleado(models.Model):
         blank=False,
         max_length=1
         )
+    
+class cuenta_usuario(AbstractBaseUser,PermissionsMixin):
+    nombre_usuario = models.CharField(
+        unique=True, 
+        null=False,
+        blank=False,
+        
+        max_length=45
+    )
+    cedula = models.ForeignKey(empleado, on_delete=models.CASCCASCADE, related_name='fk_cedula')
+    cargos = models.ForeignKey(Detalle_Cargo_Empleado, on_delete=models.CASCCASCADE, related_name='fk_cargos')
+    password = models.CharField(        
+        unique=False, 
+        null=False,
+        blank=False,
+        max_length=255
+    )
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    
+    objects = CustomAccountManager()
+
+    USERNAME_FIELD='nombre_usuario'
+    REQUIRED_FIELDS=['cedula']
+    def __str__(self):
+    # String to give nick attr to admin site
+        return self.nombre_usuario

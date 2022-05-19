@@ -35,11 +35,11 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+#Reemplazo de el usuario default de Django
+AUTH_USER_MODEL = 'asistencia.cuenta_usuario'
 
 # Application definition
 
-AUTH_USER_MODEL = 'asistencia.cuenta_usuario'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
